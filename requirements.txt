@@ -1,0 +1,9 @@
+logzio-python-handler==3.0.0
+paramiko==2.7.1
+aiohttp==3.5.4
+aiobotocore==0.10.2
+ptvsd==4.3.2
+pytest==5.4.3
+prometheus-client==0.8.0
+numpy==1.19.0
+matplotlib==3.2.2

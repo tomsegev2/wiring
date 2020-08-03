@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-exporter
+  labels:
+    app: video-exporter
+  namespace: webapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: video-exporter
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: video-exporter
+    spec:
+      containers:
+        - image: 515538109774.dkr.ecr.us-east-1.amazonaws.com/video-exporter:development
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3633
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 0.5
+              memory: "4Gi"
+              ephemeral-storage: "2Gi"
+            limits:
+              cpu: 0.5
+              memory: "6Gi"
+              ephemeral-storage: "2Gi" 
+          imagePullPolicy: Always
+          name: video-exporter
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "80"
+            - name: BEAMUP_ENV
+              value: "development"
+            - name: SECRETS_BUCKET
+              value: "dev.secrets.beamup"
+            - name: AWS_ACCESS_KEY_ID
+              value: "{{AWS_ACCESS_KEY_ID}}"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "{{AWS_SECRET_ACCESS_KEY}}"
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"

@@ -1,0 +1,160 @@
+version: 2.1
+jobs:
+  build-and-test:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      - SERVICE_NAME: video-exporter
+    resource_class: large
+    working_directory: ~/data
+    steps:
+      - checkout
+      - attach_workspace:
+          at: data/workspace
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: install aws cli
+          command: |
+            echo "installing aws cli"
+            pip install awscli --upgrade --user
+            echo "configuring aws cli"
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: build image
+          command: devops/circleci/build-image.sh video-exporter
+      - run:
+          name: tests
+          command: |
+            echo "running unit tests step"
+            echo "installing flake8"
+            python -m pip install flake8==3.7.9
+            echo "installing pylint"
+            pip install pylint==2.4.4
+            echo "creating .env file"
+            echo "AWS_ACCESS_KEY_ID=access_key_id_demo" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=access_key_demo" >> .env
+            echo "AWS_DEFAULT_REGION=region_demo" >> .env
+            echo "BEAMUP_ENV=test.docker" >> .env
+            export TEST_FILE="test.sh"
+            echo "checking if test file exists for $SERVICE_NAME"
+            if [ ! -f $TEST_FILE ]
+            then
+              echo "Skipping $SERVICE_NAME unit tests - test.sh not found"
+            else
+              echo "file found"
+              ./$TEST_FILE
+              if [ $? -ne 0 ]
+              then
+                exit 1
+              fi
+            fi
+
+  video-exporter-build-push:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      - SERVICE: video-exporter
+    working_directory: ~/data
+    steps:
+      - checkout
+      - attach_workspace:
+          at: data/workspace
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: install aws cli
+          command: |
+            echo "installing aws cli"
+            pip install awscli --upgrade --user
+            echo "configuring aws cli"
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+      - run:
+          name: build
+          command: |
+            echo "building $SERVICE"
+            devops/circleci/build-image.sh $SERVICE
+            devops/circleci/push-image.sh $SERVICE
+
+  deploy-development:
+    docker:
+      - image: circleci/python:3.7
+    environment:
+      - CLUSTER_NAME: webapp
+      - SERVICE_NAME: video-exporter
+    working_directory: ~/data
+    steps:
+      - checkout
+      - attach_workspace:
+          at: data/workspace
+      - run:
+          name: install infrastructure
+          command: |
+            devops/circleci/install-infra.sh
+      - run:
+          no_output_timeout: 30m
+          name: deploy to development
+          command: |
+            ENVIRONMENT_NAME=development
+            cd devops/clusters/
+            echo "deploying $ENVIRONMENT_NAME-$SERVICE_NAME"
+            ./deploy_app.sh ${ENVIRONMENT_NAME} ${CLUSTER_NAME} ${SERVICE_NAME}
+
+  deploy-production:
+    docker:
+      - image: circleci/python:3.7
+    working_directory: ~/data
+    steps:
+      - checkout
+      - attach_workspace:
+          at: data/workspace
+      - run:
+          name: install infrastructure
+          command: |
+            devops/circleci/install-infra.sh
+      - run:
+          name: deploy to production
+          no_output_timeout: 30m
+          command: |
+            ENVIRONMENT_NAME=production
+            cd devops/clusters/
+            echo "deploying $ENVIRONMENT_NAME-$SERVICE_NAME"
+            ./deploy_app.sh ${ENVIRONMENT_NAME} ${CLUSTER_NAME} ${SERVICE_NAME}
+workflows:
+  pipeline:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:
+              ignore:
+                - develop
+                - master
+      - video-exporter-build-push:
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - deploy-production:
+          filters:
+            branches:
+              only: master
+          requires:
+            - approve-deployment
+      - deploy-development:
+          filters:
+            branches:
+              only: develop
+          requires:
+            - video-exporter-build-push
+      - approve-deployment:
+          filters:
+            branches:
+              only: master
+          type: approval
+          requires:
+            - video-exporter-build-push

@@ -1,0 +1,16 @@
+{
+    "logzio-token": {
+        "secret": true,
+        "bucket": "prod.secrets.beamup",
+        "key": "logzio-token"
+    },
+    "port": {
+        "secret": false,
+        "value": 3633
+    },
+    "video-exporter-request": "prod-video-exporter-request.fifo",
+    "video-exporter-response": "prod-video-exporter-response.fifo",
+    "consoleLevel": "DEBUG",
+    "externalLevel": "INFO",
+    "user_data_bucket": "prod.user.data"
+}

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: video-exporter
+  name: video-exporter
+  namesoace: webapp
+spec:
+  selector:
+    app: video-exporter
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3633
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 80

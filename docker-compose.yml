@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  video-exporter:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "3633:3633"
+    networks:
+      - mono-repo_default
+      - default
+
+volumes:
+  redis-data:
+  mongodb-data:
+networks:
+  mono-repo_default:
+    external: true

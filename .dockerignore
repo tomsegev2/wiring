@@ -1,0 +1,26 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!/src/**
+!/dashboard/**
+!/config/**
+!/research/**
+!/system-test/**
+!/keras-retinanet/**
+!/cad-benchmark/**
+!/scripts/**
+!/ml/**
+!/devops/**
+!docker-compose.yml
+!requirements.txt
+
+# Ignore unnecessary files inside allowed directories
+# This should go after the allowed directories
+**/*~
+**/*.log
+**/.DS_Store
+**/Thumbs.db
+**/__pycache__
+**/node_modules
+**/dist
