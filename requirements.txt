@@ -5,5 +5,5 @@ aiobotocore==0.10.2
 ptvsd==4.3.2
 pytest==5.4.3
 prometheus-client==0.8.0
-numpy==1.19.0
+numpy==1.22.0
 matplotlib==3.2.2
